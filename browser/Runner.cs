@@ -89,22 +89,141 @@ namespace OneScriptWasm
             return exc.Message.Contains("PlatformNotSupportedException");
         }
 
+        // Для знаков OneScript печатает внутреннее имя токена («Ожидается символ: ClosePar»)
+        private static readonly (string Name, string Text)[] TokenNames =
+        {
+            ("OpenPar", "("), ("ClosePar", ")"), ("OpenBracket", "["), ("CloseBracket", "]"),
+            ("Comma", ","), ("Dot", "."), ("Equal", "="), ("Semicolon", ";"), ("Question", "?"),
+        };
+
+        internal static string Humanize(string message)
+        {
+            if (string.IsNullOrEmpty(message)) return message;
+            foreach (var (name, text) in TokenNames)
+                message = System.Text.RegularExpressions.Regex.Replace(message, $@"\b{name}\b", text);
+            return message;
+        }
+
         internal static string Describe(Exception exc)
         {
             if (exc is ScriptException se)
             {
                 var line = se.LineNumber > 0 ? $"Строка {se.LineNumber}: " : "";
-                return line + (IsNotSupported(se) ? NotInBrowser : se.ErrorDescription);
+                return line + (IsNotSupported(se) ? NotInBrowser : Humanize(se.ErrorDescription));
             }
             if (IsNotSupported(exc)) return NotInBrowser;
             return exc.GetType().Name + ": " + exc.Message;
         }
 
-        public static string RunToJson(string code, string input)
+        private static void SetCulture()
         {
             var ru = new System.Globalization.CultureInfo("ru-RU");
             System.Globalization.CultureInfo.CurrentCulture = ru;
             System.Globalization.CultureInfo.CurrentUICulture = ru;
+        }
+
+        // errorSink == null: стандартное поведение (исключение на первой ошибке компиляции).
+        // ListErrorSink: компилятор собирает все ошибки и продолжает разбор.
+        private static HostedScriptEngine CreateEngine(IErrorSink errorSink)
+        {
+            var builder = DefaultEngineBuilder.Create()
+                .SetupConfiguration(p => { });
+            builder.SetDefaultOptions()
+                .UseImports()
+                .UseBinaryDataOptions()
+                .UseBackgroundTasksOptions()
+                .UseNativeRuntime()
+                .UseEventHandlers();
+            if (errorSink != null)
+                builder.Services.RegisterSingleton<IErrorSink>(_ => errorSink);
+            builder.SetupEnvironment(env => { env.AddStandardLibrary(); });
+            return new HostedScriptEngine(builder.Build());
+        }
+
+        private static SourceCode MakeSource(string code) =>
+            OneScript.Sources.SourceCodeBuilder.Create()
+                .FromString(code ?? "")
+                .WithName("Песочница")
+                .Build();
+
+        private sealed class Diagnostic
+        {
+            public int Line;
+            public int Column;   // 1-based; 0 — столбец неизвестен
+            public string Message;
+        }
+
+        /// <summary>
+        /// Компилирует код без выполнения и возвращает все найденные ошибки:
+        /// [{line, column, message}]. Синтаксические ошибки парсер собирает с восстановлением
+        /// (пропускает до следующего оператора), ошибки связывания (неизвестные символы,
+        /// число аргументов) добавляет генератор кода.
+        /// </summary>
+        public static string CheckToJson(string code)
+        {
+            SetCulture();
+            var sink = new ListErrorSink();
+            var extra = new List<Diagnostic>();
+            var oldOut = Console.Out;
+            Console.SetOut(TextWriter.Null);
+            OneScript.Language.SyntaxAnalysis.BslSyntaxWalker.SandboxCheckMode = true;
+            try
+            {
+                using var engine = CreateEngine(sink);
+                // CreateProcess только компилирует модуль и создаёт процесс; код выполняется в Start(), его не вызываем.
+                engine.CreateProcess(new BrowserHost(""), MakeSource(code));
+            }
+            catch (ScriptException se)
+            {
+                extra.Add(new Diagnostic { Line = se.LineNumber, Column = se.ColumnNumber, Message = Humanize(se.ErrorDescription) });
+            }
+            catch (Exception)
+            {
+                // Генератор кода может упасть на дереве, испорченном синтаксической ошибкой.
+                // Ошибки, собранные до этого момента, всё равно отдаём.
+            }
+            finally
+            {
+                OneScript.Language.SyntaxAnalysis.BslSyntaxWalker.SandboxCheckMode = false;
+                Console.SetOut(oldOut);
+            }
+
+            var all = new List<Diagnostic>();
+            var seen = new HashSet<string>();
+            void Add(Diagnostic d)
+            {
+                if (d.Line <= 0 || string.IsNullOrEmpty(d.Message)) return;
+                if (seen.Add($"{d.Line}:{d.Column}:{d.Message}")) all.Add(d);
+            }
+            foreach (var e in sink.Errors)
+                Add(new Diagnostic
+                {
+                    Line = e.Position?.LineNumber ?? 0,
+                    Column = Math.Max(0, e.Position?.ColumnNumber ?? 0),
+                    Message = Humanize(e.Description),
+                });
+            foreach (var d in extra) Add(d);
+
+            using var stream = new MemoryStream();
+            using (var w = new Utf8JsonWriter(stream))
+            {
+                w.WriteStartArray();
+                foreach (var d in all)
+                {
+                    w.WriteStartObject();
+                    w.WriteNumber("line", d.Line);
+                    w.WriteNumber("column", d.Column);
+                    w.WriteString("message", d.Message);
+                    w.WriteEndObject();
+                }
+                w.WriteEndArray();
+            }
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+
+        public static string RunToJson(string code, string input)
+        {
+            SetCulture();
             var host = new BrowserHost(input);
             var sw = Stopwatch.StartNew();
             int exitCode;
@@ -114,21 +233,8 @@ namespace OneScriptWasm
             Console.SetOut(consoleOut);
             try
             {
-                var builder = DefaultEngineBuilder.Create()
-                    .SetupConfiguration(p => { });
-                builder.SetDefaultOptions()
-                    .UseImports()
-                    .UseBinaryDataOptions()
-                    .UseBackgroundTasksOptions()
-                    .UseNativeRuntime()
-                    .UseEventHandlers();
-                builder.SetupEnvironment(env => { env.AddStandardLibrary(); });
-
-                using var engine = new HostedScriptEngine(builder.Build());
-                var source = OneScript.Sources.SourceCodeBuilder.Create()
-                    .FromString(code ?? "")
-                    .WithName("Песочница")
-                    .Build();
+                using var engine = CreateEngine(null);
+                var source = MakeSource(code);
                 ScriptEngine.HostedScript.Process process;
                 try
                 {
@@ -178,6 +284,9 @@ namespace OneScriptWasm
         public static string Run(string code, string input) => RunToJson(code, input);
 
         [JSExport]
+        public static string Check(string code) => CheckToJson(code);
+
+        [JSExport]
         public static string Version() => typeof(ScriptException).Assembly.GetName().Version?.ToString() ?? "?";
     }
 
@@ -186,6 +295,11 @@ namespace OneScriptWasm
         public static void Main(string[] args)
         {
             // В браузере Main ничего не делает: JS вызывает Runner.Run напрямую.
+            if (args.Length > 1 && args[0] == "--check" && File.Exists(args[1]))
+            {
+                Console.WriteLine(Runner.CheckToJson(File.ReadAllText(args[1])));
+                return;
+            }
             if (args.Length > 0 && File.Exists(args[0]))
             {
                 Console.WriteLine(Runner.RunToJson(File.ReadAllText(args[0]), args.Length > 1 ? args[1] : ""));

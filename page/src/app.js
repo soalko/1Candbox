@@ -1,7 +1,8 @@
 // Песочница 1С: редактор CodeMirror + движок OneScript (.NET WebAssembly) в Web Worker.
 import { EditorView, basicSetup } from 'codemirror';
-import { keymap } from '@codemirror/view';
-import { EditorState, Compartment } from '@codemirror/state';
+import { keymap, Decoration, WidgetType } from '@codemirror/view';
+import { EditorState, Compartment, StateField, StateEffect } from '@codemirror/state';
+import { linter, lintGutter, forceLinting } from '@codemirror/lint';
 import { indentUnit } from '@codemirror/language';
 import { indentWithTab } from '@codemirror/commands';
 import { bsl } from '@1c-syntax/codemirror-lang-bsl';
@@ -46,6 +47,161 @@ function saveDraft() {
   } catch { /* хранилище недоступно — черновик просто не сохранится */ }
 }
 
+// ---------- Диагностика ----------
+// Слово (идентификатор 1С) под позицией ошибки: его и подчёркиваем.
+const WORD_RE = /[\p{L}\p{N}_]+/uy;
+
+function rangeAt(doc, lineNo, column) {
+  const line = doc.line(Math.min(Math.max(lineNo, 1), doc.lines));
+  if (!column || column < 1) {
+    // Столбец неизвестен — подчёркиваем строку без отступа
+    const indent = line.text.length - line.text.trimStart().length;
+    return { from: line.from + indent, to: Math.max(line.from + indent, line.to) };
+  }
+  const offset = Math.min(column - 1, line.length);
+  WORD_RE.lastIndex = offset;
+  const m = WORD_RE.exec(line.text);
+  if (m) return { from: line.from + offset, to: line.from + offset + m[0].length };
+  // Не слово (скобка, точка с запятой, конец строки) — один символ, а в конце строки — последний символ
+  if (offset < line.length) return { from: line.from + offset, to: line.from + offset + 1 };
+  return { from: Math.max(line.from, line.to - 1), to: line.to };
+}
+
+// Последний символ кода (без комментария) в строках выше lineNo
+function prevCodeEnd(doc, lineNo) {
+  for (let n = lineNo - 1; n >= 1; n--) {
+    const prev = doc.line(n);
+    const text = prev.text.replace(/\/\/.*$/, '').trimEnd();
+    if (text) return { from: prev.from + text.length - 1, to: prev.from + text.length };
+  }
+  return null;
+}
+
+// Ошибки компиляции: проверка в воркере без запуска кода (Runner.Check)
+let checkSeq = 0;
+const checkWaiters = new Map(); // id → resolve
+
+const CHECK_TIMEOUT_MS = 3000;
+
+function checkInWorker(code) {
+  // Во время запуска воркер занят; после запуска проверка повторится (forceLinting)
+  if (!worker || !engineReady || pending) return Promise.resolve(null);
+  const id = ++checkSeq;
+  return new Promise((resolve) => {
+    // Защита от зависания компилятора: перезапускаем воркер, как при таймауте программы
+    const timer = setTimeout(() => {
+      if (!checkWaiters.has(id) || pending) return;
+      worker.terminate();
+      dropCheckWaiters();
+      startWorker();
+    }, CHECK_TIMEOUT_MS);
+    checkWaiters.set(id, (diagnostics) => { clearTimeout(timer); resolve(diagnostics); });
+    worker.postMessage({ type: 'check', id, code });
+  });
+}
+function dropCheckWaiters() {
+  for (const resolve of checkWaiters.values()) resolve(null);
+  checkWaiters.clear();
+}
+
+async function bslLintSource(v) {
+  const doc = v.state.doc;
+  const code = doc.toString();
+  const result = [];
+  const compiled = await checkInWorker(code);
+  // Пока проверяли, текст мог измениться: тогда результат устарел, линтер запустится снова сам
+  if (v.state.doc.toString() !== code) return [];
+  const seenPos = new Set();
+  for (const d of compiled || []) {
+    if (d.line < 1 || d.line > doc.lines) continue;
+    // Несколько ошибок в одной точке — обычно следствие первой, показываем первую
+    const key = `${d.line}:${d.column}`;
+    if (seenPos.has(key)) continue;
+    seenPos.add(key);
+    let { from, to } = rangeAt(doc, d.line, d.column);
+    // Компилятор замечает ошибку на следующей лексеме. Если перед ней в строке ничего нет
+    // (столбец 0 или «Ожидается ;» в начале оператора), ошибка относится к концу предыдущей строки.
+    const line = doc.line(d.line);
+    const atLineStart = !line.text.slice(0, Math.max(0, from - line.from)).trim();
+    if (d.column < 1 || (atLineStart && d.message.includes(';'))) {
+      const prev = prevCodeEnd(doc, d.line);
+      if (prev) ({ from, to } = prev);
+    }
+    // Незакрытая кавычка: подчёркиваем от кавычки до конца строки — туда ушёл «литерал»
+    if (d.message.startsWith('Незакрытая кавычка') && d.column >= 1) to = Math.max(to, line.to);
+    result.push({ from, to, severity: 'error', source: 'Компилятор', message: d.message });
+  }
+  // «Ожидается ;» на строке, где уже есть другая ошибка, — её следствие
+  // (например, «;» попала внутрь незакрытой строки): не показываем
+  const isSemicolon = (r) => r.message.startsWith('Ожидается символ ;');
+  const linesWithOther = new Set(result.filter((r) => !isSemicolon(r)).map((r) => doc.lineAt(r.from).number));
+  for (let i = result.length - 1; i >= 0; i--) {
+    if (isSemicolon(result[i]) && linesWithOther.has(doc.lineAt(result[i].from).number)) result.splice(i, 1);
+  }
+  // Подсказки о совместимости — предупреждения на месте
+  for (const rule of RULES) {
+    const re = new RegExp(rule.re.source, rule.re.flags.includes('g') ? rule.re.flags : rule.re.flags + 'g');
+    for (const m of code.matchAll(re)) {
+      result.push({ from: m.index, to: m.index + m[0].trimEnd().length, severity: 'warning', source: 'Совместимость', message: rule.text });
+    }
+  }
+  return result;
+}
+
+// Ошибка выполнения: подсветка строки до первого изменения этой строки
+const setRuntimeError = StateEffect.define();
+
+class RuntimeErrorWidget extends WidgetType {
+  constructor(message) { super(); this.message = message; }
+  eq(other) { return other.message === this.message; }
+  toDOM() {
+    const span = document.createElement('span');
+    span.className = 'cm-runtime-error-msg';
+    span.textContent = this.message;
+    span.title = this.message;
+    return span;
+  }
+  ignoreEvent() { return true; }
+}
+
+const runtimeErrorField = StateField.define({
+  create: () => null, // { from, to, message } — границы строки с ошибкой
+  update(val, tr) {
+    for (const e of tr.effects) if (e.is(setRuntimeError)) val = e.value;
+    if (val && tr.docChanged) {
+      let touched = false;
+      tr.changes.iterChangedRanges((fromA, toA) => {
+        if (fromA <= val.to && toA >= val.from) touched = true;
+      });
+      if (touched) return null;
+      val = { ...val, from: tr.changes.mapPos(val.from, -1), to: tr.changes.mapPos(val.to, 1) };
+    }
+    return val;
+  },
+  provide: (f) => EditorView.decorations.from(f, (val) => {
+    if (!val) return Decoration.none;
+    return Decoration.set([
+      Decoration.line({ class: 'cm-runtime-error-line' }).range(val.from),
+      Decoration.widget({ widget: new RuntimeErrorWidget(val.message), side: 1 }).range(val.to),
+    ]);
+  }),
+});
+
+function showRuntimeError(items) {
+  let effect = null;
+  for (const it of items || []) {
+    if (it.kind !== 'err') continue;
+    const m = String(it.text).match(/^Строка (\d+):\s*(.*)/s);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (n < 1 || n > view.state.doc.lines) break;
+    const line = view.state.doc.line(n);
+    effect = setRuntimeError.of({ from: line.from, to: line.to, message: m[2].split('\n')[0] });
+    break;
+  }
+  view.dispatch({ effects: effect || setRuntimeError.of(null) });
+}
+
 const draft = loadDraft();
 const initial = draft && draft.code ? draft : EXAMPLES[0];
 els.input.value = initial.input || '';
@@ -65,6 +221,9 @@ const view = new EditorView({
         indentWithTab,
       ]),
       themeCompartment.of(editorTheme()),
+      lintGutter(),
+      linter(bslLintSource, { delay: 500 }),
+      runtimeErrorField,
       EditorView.updateListener.of((u) => {
         if (u.docChanged) {
           clearTimeout(saveTimer);
@@ -119,10 +278,10 @@ els.clear.addEventListener('click', () => {
 // ---------- Подсказки о совместимости ----------
 const RULES = [
   { re: /Новый\s+Запрос|ВЫБРАТЬ\s/i, text: 'Запросы к базе данных выполняются только в платформе 1С: здесь нет информационной базы.' },
-  { re: /\b(Справочники|Документы|РегистрыСведений|РегистрыНакопления|РегистрыБухгалтерии|Перечисления|Константы|ПланыСчетов|ПланыВидовХарактеристик|БизнесПроцессы|ЖурналыДокументов|Обработки|Отчеты)\./, text: 'Объекты конфигурации (справочники, документы, регистры) существуют только внутри конкретной базы 1С.' },
+  { re: /(?<![\p{L}\p{N}_])(Справочники|Документы|РегистрыСведений|РегистрыНакопления|РегистрыБухгалтерии|Перечисления|Константы|ПланыСчетов|ПланыВидовХарактеристик|БизнесПроцессы|ЖурналыДокументов|Обработки|Отчеты)\./u, text: 'Объекты конфигурации (справочники, документы, регистры) существуют только внутри конкретной базы 1С.' },
   { re: /&(НаСервере|НаКлиенте|НаСервереБезКонтекста|НаКлиентеНаСервере)/, text: 'Директивы &НаКлиенте/&НаСервере здесь не разделяют код: всё выполняется в одном месте.' },
-  { re: /\b(ОбщегоНазначения|ОбщегоНазначенияКлиент|ОбщегоНазначенияКлиентСервер|СтроковыеФункцииКлиентСервер|СтроковыеФункции|ОбщегоНазначенияСервер)\./, text: 'Это модули БСП (Библиотеки стандартных подсистем). В песочнице их нет — используйте функции платформы: СтрРазделить, СтрСоединить, СтрШаблон.' },
-  { re: /\b(ЭтаФорма|ЭтотОбъект|Элементы\.|ОткрытьФорму|ПолучитьФорму|ПоказатьПредупреждение|ПоказатьВопрос|ОповеститьОбИзменении)\b/, text: 'Формы и интерфейс клиента в песочнице недоступны. Выводите результат через Сообщить().' },
+  { re: /(?<![\p{L}\p{N}_])(ОбщегоНазначения|ОбщегоНазначенияКлиент|ОбщегоНазначенияКлиентСервер|СтроковыеФункцииКлиентСервер|СтроковыеФункции|ОбщегоНазначенияСервер)\./u, text: 'Это модули БСП (Библиотеки стандартных подсистем). В песочнице их нет — используйте функции платформы: СтрРазделить, СтрСоединить, СтрШаблон.' },
+  { re: /(?<![\p{L}\p{N}_])(?:(?:ЭтаФорма|ЭтотОбъект|ОткрытьФорму|ПолучитьФорму|ПоказатьПредупреждение|ПоказатьВопрос|ОповеститьОбИзменении)(?![\p{L}\p{N}_])|Элементы\.)/u, text: 'Формы и интерфейс клиента в песочнице недоступны. Выводите результат через Сообщить().' },
 ];
 function updateHints() {
   const code = view.state.doc.toString();
@@ -161,6 +320,11 @@ function startWorker() {
       const sec = ((performance.now() - started) / 1000).toFixed(1);
       readyText = `Движок готов · OneScript ${msg.version} · загрузка ${sec} с`;
       setStatus('ready', readyText);
+      forceLinting(view);
+    } else if (msg.type === 'check') {
+      const resolve = checkWaiters.get(msg.id);
+      checkWaiters.delete(msg.id);
+      if (resolve) resolve(msg.diagnostics);
     } else if (msg.type === 'fatal') {
       setStatus('fatal', 'Движок не загрузился');
       renderOutput([{ kind: 'err', text: 'Не удалось запустить движок: ' + msg.message }]);
@@ -168,12 +332,14 @@ function startWorker() {
       clearTimeout(pending.timer);
       const res = msg.result;
       renderOutput(res.output, res.exitCode);
+      showRuntimeError(res.exitCode === 0 ? [] : res.output);
       const total = Math.round(performance.now() - pending.started);
       els.meta.textContent = res.exitCode === 0
         ? `Выполнено за ${total} мс`
         : `Завершено с ошибкой · ${total} мс`;
       pending = null;
       setStatus('ready', readyText);
+      forceLinting(view);
     }
   };
   worker.onerror = (e) => {
@@ -187,6 +353,7 @@ function runCode() {
   const id = ++runSeq;
   const code = view.state.doc.toString();
   saveDraft();
+  view.dispatch({ effects: setRuntimeError.of(null) });
   setStatus('running', 'Выполняю…');
   els.meta.textContent = '';
   showPlaceholder('Выполняется…');
@@ -196,6 +363,7 @@ function runCode() {
     timer: setTimeout(() => {
       // Бесконечный цикл: останавливаем поток целиком и поднимаем движок заново
       worker.terminate();
+      dropCheckWaiters();
       pending = null;
       renderOutput([{ kind: 'err', text: `Программа работала дольше ${TIMEOUT_MS / 1000} с и была остановлена. Проверьте условия выхода из циклов и рекурсии.` }], 1);
       els.meta.textContent = 'Остановлено по таймауту';

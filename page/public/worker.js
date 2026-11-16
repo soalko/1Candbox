@@ -17,6 +17,16 @@ const ready = (async () => {
 
 self.onmessage = async (ev) => {
   const msg = ev.data;
+  if (msg.type === 'check') {
+    await ready;
+    if (!runner) return;
+    let diagnostics = [];
+    try {
+      diagnostics = JSON.parse(runner.Check(msg.code));
+    } catch { /* проверка не удалась — просто без подсветки */ }
+    postMessage({ type: 'check', id: msg.id, diagnostics });
+    return;
+  }
   if (msg.type !== 'run') return;
   await ready;
   if (!runner) return;

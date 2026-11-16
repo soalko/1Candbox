@@ -85,6 +85,23 @@
   #editor .cm-editor { height: 100%; font-family: var(--font-code); font-size: 14px; background: var(--panel); }
   #editor .cm-scroller { font-family: var(--font-code); }
   #editor .cm-gutters { background: var(--panel); border-right: 1px solid var(--line); color: var(--muted); }
+  /* Ошибка выполнения: фон строки и текст ошибки в конце строки */
+  #editor .cm-runtime-error-line { background: color-mix(in srgb, var(--err) 13%, transparent); }
+  #editor .cm-runtime-error-msg {
+    margin-left: 2.5em; padding: 0 8px; border-radius: 4px; color: var(--err);
+    background: color-mix(in srgb, var(--err) 10%, transparent);
+    font: 12.5px/1.6 var(--font-ui); white-space: nowrap;
+  }
+  /* Подсказки линтера в цветах страницы */
+  #editor .cm-tooltip { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
+  #editor .cm-tooltip-lint { font: 13px/1.45 var(--font-ui); }
+  #editor .cm-diagnostic { padding: 5px 9px; max-width: 46ch; }
+  #editor .cm-diagnostic-error { border-left: 3px solid var(--err); }
+  #editor .cm-diagnostic-warning { border-left: 3px solid var(--warn-ink); }
+  #editor .cm-diagnosticSource { color: var(--muted); opacity: 1; font-size: 12px; margin-top: 2px; }
+  /* Колонка значков ошибок: значок 14px плюс отступы, чтобы не залезал на границу редактора */
+  #editor .cm-gutter-lint { width: 1.7em; }
+  #editor .cm-gutter-lint .cm-gutterElement { padding: 0 .25em; display: flex; align-items: center; justify-content: center; }
   .right { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; min-height: 0; }
   #stdin {
     width: 100%; min-height: 64px; height: 76px; resize: vertical; border: 0; padding: 10px 12px;
