@@ -1,4 +1,0 @@
-/Users/soldatov_a/Documents/1Сandbox/out/oscript.cfg
-/Users/soldatov_a/Documents/1Сandbox/out/OneScriptWasm.runtimeconfig.json
-/Users/soldatov_a/Documents/1Сandbox/out/emcc-props.json
-/Users/soldatov_a/Documents/1Сandbox/out/web.config

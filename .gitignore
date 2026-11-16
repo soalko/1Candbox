@@ -1,0 +1,33 @@
+# --- Исходники OneScript ---
+# Клон EvilBeaver/OneScript создаёт build.sh, правки накладывает scripts/patch_onescript.py.
+/onescript/
+
+# --- Результаты сборки ---
+# .NET (dotnet publish)
+/out/
+browser/bin/
+browser/obj/
+# Готовый сайт: public/* + _framework/
+/site/
+# app.js собирается esbuild из page/src (index.html и worker.js в public — исходники)
+page/public/app.js
+page/public/_framework/
+
+# --- Node.js ---
+node_modules/
+npm-debug.log*
+
+# --- .NET / IDE ---
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
+*.swp
+
+# --- Claude Code: личные настройки ---
+.claude/settings.local.json
+
+# --- macOS ---
+.DS_Store
+._*
