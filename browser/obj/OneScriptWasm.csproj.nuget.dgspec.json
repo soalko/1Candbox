@@ -1,0 +1,574 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/soldatov_a/Documents/1Сandbox/browser/OneScriptWasm.csproj": {}
+  },
+  "projects": {
+    "/Users/soldatov_a/Documents/1Сandbox/browser/OneScriptWasm.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/soldatov_a/Documents/1Сandbox/browser/OneScriptWasm.csproj",
+        "projectName": "OneScriptWasm",
+        "projectPath": "/Users/soldatov_a/Documents/1Сandbox/browser/OneScriptWasm.csproj",
+        "packagesPath": "/Users/soldatov_a/.nuget/packages/",
+        "outputPath": "/Users/soldatov_a/Documents/1Сandbox/browser/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/soldatov_a/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine.HostedScript/ScriptEngine.HostedScript.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine.HostedScript/ScriptEngine.HostedScript.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.NET.Sdk.WebAssembly.Pack": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.0.12, )",
+              "autoReferenced": true
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "browser-wasm": {
+          "#import": []
+        }
+      }
+    },
+    "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/OneScript.Core.csproj": {
+      "version": "2.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/OneScript.Core.csproj",
+        "projectName": "OneScript.CoreLib",
+        "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/OneScript.Core.csproj",
+        "packagesPath": "/Users/soldatov_a/.nuget/packages/",
+        "outputPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/soldatov_a/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj": {
+      "version": "2.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj",
+        "projectName": "OneScript.Language",
+        "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj",
+        "packagesPath": "/Users/soldatov_a/.nuget/packages/",
+        "outputPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/soldatov_a/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Native/OneScript.Native.csproj": {
+      "version": "2.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Native/OneScript.Native.csproj",
+        "projectName": "OneScript.Native",
+        "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Native/OneScript.Native.csproj",
+        "packagesPath": "/Users/soldatov_a/.nuget/packages/",
+        "outputPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Native/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/soldatov_a/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/OneScript.Core.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/OneScript.Core.csproj"
+              },
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.CSharp": {
+              "target": "Package",
+              "version": "[4.7.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.StandardLibrary/OneScript.StandardLibrary.csproj": {
+      "version": "2.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.StandardLibrary/OneScript.StandardLibrary.csproj",
+        "projectName": "OneScript.StandardLibrary",
+        "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.StandardLibrary/OneScript.StandardLibrary.csproj",
+        "packagesPath": "/Users/soldatov_a/.nuget/packages/",
+        "outputPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.StandardLibrary/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/soldatov_a/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/ScriptEngine.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/ScriptEngine.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.2, )"
+            },
+            "ProDotNetZip": {
+              "target": "Package",
+              "version": "[1.20.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine.HostedScript/ScriptEngine.HostedScript.csproj": {
+      "version": "2.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine.HostedScript/ScriptEngine.HostedScript.csproj",
+        "projectName": "OneScript.Hosting",
+        "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine.HostedScript/ScriptEngine.HostedScript.csproj",
+        "packagesPath": "/Users/soldatov_a/.nuget/packages/",
+        "outputPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine.HostedScript/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/soldatov_a/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.StandardLibrary/OneScript.StandardLibrary.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.StandardLibrary/OneScript.StandardLibrary.csproj"
+              },
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/ScriptEngine.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/ScriptEngine.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/ScriptEngine.csproj": {
+      "version": "2.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/ScriptEngine.csproj",
+        "projectName": "OneScript",
+        "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/ScriptEngine.csproj",
+        "packagesPath": "/Users/soldatov_a/.nuget/packages/",
+        "outputPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/ScriptEngine/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/soldatov_a/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/OneScript.Core.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Core/OneScript.Core.csproj"
+              },
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Language/OneScript.Language.csproj"
+              },
+              "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Native/OneScript.Native.csproj": {
+                "projectPath": "/Users/soldatov_a/Documents/1Сandbox/onescript/src/OneScript.Native/OneScript.Native.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Песочница 1С</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* Раскладка: шапка с действиями, ниже две колонки — редактор слева, ввод и вывод справа; на телефоне в одну колонку */
+  :root {
+    --bg: #f4f5f2;
+    --panel: #ffffff;
+    --ink: #1d2320;
+    --muted: #5f6a64;
+    --line: #d9ddd7;
+    --accent: #1f6f5c;
+    --accent-ink: #ffffff;
+    --warn-bg: #fff4d6;
+    --warn-ink: #6b4d00;
+    --err: #b3261e;
+    --font-ui: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+    --font-code: "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141816; --panel: #1b201e; --ink: #e4e8e5; --muted: #98a39d; --line: #2d3531;
+      --accent: #4fb89b; --accent-ink: #0d1411; --warn-bg: #3a3017; --warn-ink: #f1d58a; --err: #ff8a80;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141816; --panel: #1b201e; --ink: #e4e8e5; --muted: #98a39d; --line: #2d3531;
+    --accent: #4fb89b; --accent-ink: #0d1411; --warn-bg: #3a3017; --warn-ink: #f1d58a; --err: #ff8a80;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-ui);
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+    padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  .brand { display: flex; flex-direction: column; gap: 0; margin-right: auto; }
+  .brand h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .brand p { margin: 0; color: var(--muted); font-size: 13px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button, select {
+    font: inherit; font-size: 14px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); padding: 7px 12px; cursor: pointer;
+  }
+  button:hover:not(:disabled), select:hover { border-color: var(--muted); }
+  button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #run-btn {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+    font-weight: 600; padding: 7px 18px; display: inline-flex; gap: 8px; align-items: center;
+  }
+  #run-btn kbd { font: 12px var(--font-code); opacity: .8; }
+  #run-btn:disabled { opacity: .55; cursor: progress; }
+  .status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .status::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none;
+  }
+  .status[data-state="ready"]::before { background: var(--accent); }
+  .status[data-state="loading"]::before, .status[data-state="running"]::before { background: #d39b00; animation: pulse 1s infinite alternate; }
+  .status[data-state="fatal"]::before { background: var(--err); }
+  @keyframes pulse { to { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .status::before { animation: none !important; } }
+
+  main {
+    flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 16px; padding: 16px 20px;
+  }
+  .pane { display: flex; flex-direction: column; min-height: 0; gap: 8px; }
+  .pane-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .pane-head h2 { font-size: 13px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .pane-head span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  #editor { flex: 1; min-height: 320px; }
+  #editor .cm-editor { height: 100%; font-family: var(--font-code); font-size: 14px; background: var(--panel); }
+  #editor .cm-scroller { font-family: var(--font-code); }
+  #editor .cm-gutters { background: var(--panel); border-right: 1px solid var(--line); color: var(--muted); }
+  .right { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; min-height: 0; }
+  #stdin {
+    width: 100%; min-height: 64px; height: 76px; resize: vertical; border: 0; padding: 10px 12px;
+    font: 14px/1.5 var(--font-code); background: var(--panel); color: var(--ink); display: block;
+  }
+  #hints { margin: 0; padding: 10px 14px 10px 30px; background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; font-size: 13.5px; }
+  #hints li + li { margin-top: 4px; }
+  #output {
+    flex: 1; min-height: 160px; overflow: auto; padding: 10px 12px;
+    font: 14px/1.55 var(--font-code); white-space: pre-wrap; word-break: break-word;
+  }
+  #output .placeholder { color: var(--muted); margin: 0; font-family: var(--font-ui); }
+  .line-err { color: var(--err); }
+  .goto {
+    font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline;
+    text-underline-offset: 2px; cursor: pointer; border-radius: 3px;
+  }
+  footer { padding: 0 20px 14px; color: var(--muted); font-size: 12.5px; max-width: 110ch; }
+  footer p { margin: 0; }
+  @media (max-width: 820px) {
+    main { grid-template-columns: 1fr; }
+    #editor { min-height: 300px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Песочница 1С</h1>
+    <p>Проверка алгоритмов на встроенном языке 1С прямо в браузере, без установки платформы</p>
+  </div>
+  <div class="actions">
+    <span class="status" id="engine-status" data-state="loading"><span id="engine-status-text">Загружаю движок…</span></span>
+    <label for="example-select" class="visually-hidden" style="position:absolute;left:-9999px">Пример</label>
+    <select id="example-select" aria-label="Открыть пример">
+      <option value="">Примеры…</option>
+    </select>
+    <button type="button" id="copy-btn">Копировать код</button>
+    <button type="button" id="run-btn" disabled>Запустить <kbd>Ctrl+Enter</kbd></button>
+  </div>
+</header>
+<main>
+  <section class="pane" aria-label="Редактор">
+    <div class="pane-head"><h2>Код</h2><span>Модуль: процедуры и функции, затем основной код</span></div>
+    <div class="box" id="editor"></div>
+  </section>
+  <section class="right">
+    <div class="pane">
+      <div class="pane-head"><h2><label for="stdin">Ввод</label></h2><span>по строке на каждый ВвестиСтроку()</span></div>
+      <div class="box"><textarea id="stdin" spellcheck="false" placeholder="Данные для ВвестиСтроку(), по одной строке"></textarea></div>
+    </div>
+    <ul id="hints" hidden></ul>
+    <div class="pane">
+      <div class="pane-head"><h2>Вывод</h2><span id="run-meta"></span></div>
+      <div class="box" style="flex:1;display:flex;min-height:0"><div id="output" role="log" aria-live="polite"></div></div>
+      <div><button type="button" id="clear-btn">Очистить вывод</button></div>
+    </div>
+  </section>
+</main>
+<footer>
+  <p>Код выполняет OneScript — открытая реализация языка 1С (MPL-2.0). Работает алгоритмическая часть: строки, числа, даты, Массив, Структура, Соответствие, ТаблицаЗначений, исключения. Запросов, справочников, документов и форм нет: для них нужна платформа «1С:Предприятие» с информационной базой.</p>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>

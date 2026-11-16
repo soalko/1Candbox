@@ -1,0 +1,195 @@
+// Хост OneScript для браузера: выполняет код на языке 1С и возвращает вывод в JSON.
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices.JavaScript;
+using System.Text;
+using System.Text.Json;
+using OneScript.Language;
+using OneScript.Sources;
+using OneScript.StandardLibrary;
+using ScriptEngine.HostedScript;
+using ScriptEngine.HostedScript.Extensions;
+using ScriptEngine.Hosting;
+
+namespace OneScriptWasm
+{
+    public class OutputEntry
+    {
+        public string Kind;   // "out" | "err"
+        public string Text;
+    }
+
+    // Перехватывает Console.Out (объект Консоль) и пишет в общий вывод в порядке вызовов,
+    // чтобы строки Консоль.ВывестиСтроку не обгоняли Сообщить.
+    internal sealed class OrderedConsoleWriter : TextWriter
+    {
+        private readonly List<OutputEntry> _output;
+        private readonly StringBuilder _line = new();
+        public OrderedConsoleWriter(List<OutputEntry> output) { _output = output; }
+        public override Encoding Encoding => Encoding.UTF8;
+        public override void Write(char value)
+        {
+            if (value == '\r') return;
+            if (value == '\n') { FlushLine(); return; }
+            _line.Append(value);
+        }
+        public void FlushLine()
+        {
+            _output.Add(new OutputEntry { Kind = "out", Text = _line.ToString() });
+            _line.Clear();
+        }
+        public void FlushTail() { if (_line.Length > 0) FlushLine(); }
+    }
+
+    internal sealed class BrowserHost : IHostApplication
+    {
+        public readonly List<OutputEntry> Output = new();
+        private readonly Queue<string> _input;
+        public OrderedConsoleWriter ConsoleWriter;
+
+        public BrowserHost(string input)
+        {
+            _input = new Queue<string>((input ?? "").Replace("\r\n", "\n").Split('\n'));
+        }
+
+        public void Echo(string text, MessageStatusEnum status = MessageStatusEnum.Ordinary)
+        {
+            ConsoleWriter?.FlushTail();
+            var kind = status == MessageStatusEnum.Important || status == MessageStatusEnum.VeryImportant ? "err" : "out";
+            Output.Add(new OutputEntry { Kind = kind, Text = text });
+        }
+
+        public void ShowExceptionInfo(Exception exc)
+        {
+            ConsoleWriter?.FlushTail();
+            Output.Add(new OutputEntry { Kind = "err", Text = Runner.Describe(exc) });
+        }
+
+        public bool InputString(out string result, string prompt, int maxLen, bool multiline)
+        {
+            if (_input.Count == 0) { result = ""; return false; }
+            result = _input.Dequeue();
+            return true;
+        }
+
+        public string[] GetCommandLineArguments() => Array.Empty<string>();
+    }
+
+    public static partial class Runner
+    {
+        private const string NotInBrowser =
+            "Эта возможность недоступна в браузере: песочница не работает с сетью, процессами и внешними ресурсами.";
+
+        private static bool IsNotSupported(Exception exc)
+        {
+            for (var e = exc; e != null; e = e.InnerException)
+                if (e is PlatformNotSupportedException) return true;
+            return exc.Message.Contains("PlatformNotSupportedException");
+        }
+
+        internal static string Describe(Exception exc)
+        {
+            if (exc is ScriptException se)
+            {
+                var line = se.LineNumber > 0 ? $"Строка {se.LineNumber}: " : "";
+                return line + (IsNotSupported(se) ? NotInBrowser : se.ErrorDescription);
+            }
+            if (IsNotSupported(exc)) return NotInBrowser;
+            return exc.GetType().Name + ": " + exc.Message;
+        }
+
+        public static string RunToJson(string code, string input)
+        {
+            var ru = new System.Globalization.CultureInfo("ru-RU");
+            System.Globalization.CultureInfo.CurrentCulture = ru;
+            System.Globalization.CultureInfo.CurrentUICulture = ru;
+            var host = new BrowserHost(input);
+            var sw = Stopwatch.StartNew();
+            int exitCode;
+            var consoleOut = new OrderedConsoleWriter(host.Output);
+            host.ConsoleWriter = consoleOut;
+            var oldOut = Console.Out;
+            Console.SetOut(consoleOut);
+            try
+            {
+                var builder = DefaultEngineBuilder.Create()
+                    .SetupConfiguration(p => { });
+                builder.SetDefaultOptions()
+                    .UseImports()
+                    .UseBinaryDataOptions()
+                    .UseBackgroundTasksOptions()
+                    .UseNativeRuntime()
+                    .UseEventHandlers();
+                builder.SetupEnvironment(env => { env.AddStandardLibrary(); });
+
+                using var engine = new HostedScriptEngine(builder.Build());
+                var source = OneScript.Sources.SourceCodeBuilder.Create()
+                    .FromString(code ?? "")
+                    .WithName("Песочница")
+                    .Build();
+                ScriptEngine.HostedScript.Process process;
+                try
+                {
+                    process = engine.CreateProcess(host, source);
+                }
+                catch (Exception e)
+                {
+                    host.ShowExceptionInfo(e);
+                    consoleOut.FlushTail();
+                    return Serialize(host, 1, sw.ElapsedMilliseconds);
+                }
+                exitCode = process.Start();
+            }
+            catch (Exception e)
+            {
+                host.Output.Add(new OutputEntry { Kind = "err", Text = "Внутренняя ошибка движка: " + e });
+                exitCode = 2;
+            }
+            finally
+            {
+                consoleOut.FlushTail();
+                Console.SetOut(oldOut);
+            }
+            return Serialize(host, exitCode, sw.ElapsedMilliseconds);
+        }
+
+        private static string Serialize(BrowserHost host, int exitCode, long ms)
+        {
+            using var stream = new MemoryStream();
+            using (var w = new Utf8JsonWriter(stream))
+            {
+                w.WriteStartObject();
+                w.WriteNumber("exitCode", exitCode);
+                w.WriteNumber("ms", ms);
+                w.WriteStartArray("output");
+                foreach (var e in host.Output)
+                {
+                    w.WriteStartObject(); w.WriteString("kind", e.Kind); w.WriteString("text", e.Text); w.WriteEndObject();
+                }
+                w.WriteEndArray();
+                w.WriteEndObject();
+            }
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+
+        [JSExport]
+        public static string Run(string code, string input) => RunToJson(code, input);
+
+        [JSExport]
+        public static string Version() => typeof(ScriptException).Assembly.GetName().Version?.ToString() ?? "?";
+    }
+
+    public static class Program
+    {
+        public static void Main(string[] args)
+        {
+            // В браузере Main ничего не делает: JS вызывает Runner.Run напрямую.
+            if (args.Length > 0 && File.Exists(args[0]))
+            {
+                Console.WriteLine(Runner.RunToJson(File.ReadAllText(args[0]), args.Length > 1 ? args[1] : ""));
+            }
+        }
+    }
+}

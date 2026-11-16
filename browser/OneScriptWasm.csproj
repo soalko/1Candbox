@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- Движок OneScript для браузера. Сборка: ../build.sh -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CA1416;CS8632</NoWarn>
+    <!-- OneScript активно использует рефлексию, поэтому обрезку сборок отключаем -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../onescript/src/ScriptEngine.HostedScript/ScriptEngine.HostedScript.csproj" />
+  </ItemGroup>
+</Project>
