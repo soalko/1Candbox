@@ -3,7 +3,8 @@ import { EditorView, basicSetup } from 'codemirror';
 import { keymap, Decoration, WidgetType } from '@codemirror/view';
 import { EditorState, Compartment, StateField, StateEffect } from '@codemirror/state';
 import { linter, lintGutter, forceLinting } from '@codemirror/lint';
-import { indentUnit } from '@codemirror/language';
+import { indentUnit, HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags as t } from '@lezer/highlight';
 import { indentWithTab } from '@codemirror/commands';
 import { bsl } from '@1c-syntax/codemirror-lang-bsl';
 import { EXAMPLES } from './examples.js';
@@ -16,7 +17,7 @@ const els = {
   editor: $('editor'),
   run: $('run-btn'),
   examples: $('example-select'),
-  copy: $('copy-btn'),
+  themeButtons: document.querySelectorAll('[data-theme-choice]'),
   input: $('stdin'),
   output: $('output'),
   status: $('engine-status'),
@@ -35,6 +36,25 @@ const isDark = () => {
 };
 const editorTheme = () => EditorView.theme({}, { dark: isDark() });
 
+// ---------- Тема ----------
+// Пока пользователь не выбрал тему, действует системная. Выбор хранится в localStorage
+// (тот же ключ читает скрипт в <head>, чтобы тема применялась до отрисовки).
+const THEME_KEY = 'bsl-sandbox-theme';
+const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+function syncThemeButtons() {
+  const current = isDark() ? 'dark' : 'light';
+  for (const btn of els.themeButtons) btn.setAttribute('aria-pressed', String(btn.dataset.themeChoice === current));
+}
+function setTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem(THEME_KEY, theme); } catch { /* без хранилища тема просто не запомнится */ }
+  syncThemeButtons();
+}
+for (const btn of els.themeButtons) btn.addEventListener('click', () => setTheme(btn.dataset.themeChoice));
+if (systemDark) systemDark.addEventListener('change', syncThemeButtons);
+syncThemeButtons();
+
 function loadDraft() {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
@@ -46,6 +66,27 @@ function saveDraft() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ code: view.state.doc.toString(), input: els.input.value }));
   } catch { /* хранилище недоступно — черновик просто не сохранится */ }
 }
+
+// ---------- Подсветка синтаксиса ----------
+// Стандартная схема CodeMirror рассчитана на светлый фон: на тёмном директивы (#404740)
+// и ключевые слова (#708) почти не видны. Цвета берём из CSS-переменных --syn-*,
+// поэтому схема сама переключается вместе с темой страницы.
+const bslHighlight = HighlightStyle.define([
+  { tag: [t.definitionKeyword, t.controlKeyword, t.keyword, t.modifier, t.operatorKeyword, t.logicOperator],
+    color: 'var(--syn-keyword)' },
+  { tag: [t.string, t.literal], color: 'var(--syn-string)' },
+  { tag: [t.number, t.bool, t.null], color: 'var(--syn-number)' },
+  { tag: [t.comment, t.lineComment, t.docComment], color: 'var(--syn-comment)', fontStyle: 'italic' },
+  // Директивы компиляции (&НаСервере, &НаКлиенте) — отдельный цвет и полужирный: от них зависит, где выполняется код
+  { tag: t.annotation, color: 'var(--syn-annotation)', fontWeight: '600' },
+  // Препроцессор (#Область, #Если) и метки
+  { tag: [t.macroName, t.namespace, t.processingInstruction, t.labelName], color: 'var(--syn-macro)' },
+  { tag: t.function(t.definition(t.variableName)), color: 'var(--syn-definition)', fontWeight: '600' },
+  { tag: [t.typeName, t.className], color: 'var(--syn-type)' },
+  { tag: [t.arithmeticOperator, t.compareOperator], color: 'var(--syn-operator)' },
+  { tag: t.special(t.variableName), color: 'var(--syn-number)' },
+  { tag: t.invalid, color: 'var(--err)' },
+]);
 
 // ---------- Диагностика ----------
 // Слово (идентификатор 1С) под позицией ошибки: его и подчёркиваем.
@@ -214,12 +255,9 @@ const view = new EditorView({
     extensions: [
       basicSetup,
       bsl(),
+      syntaxHighlighting(bslHighlight),
       indentUnit.of('    '),
-      keymap.of([
-        { key: 'Mod-Enter', run: () => { runCode(); return true; } },
-        { key: 'F5', run: () => { runCode(); return true; } },
-        indentWithTab,
-      ]),
+      keymap.of([indentWithTab]),
       themeCompartment.of(editorTheme()),
       lintGutter(),
       linter(bslLintSource, { delay: 500 }),
@@ -255,19 +293,12 @@ els.examples.addEventListener('change', () => {
   view.focus();
 });
 
-els.copy.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(view.state.doc.toString());
-    flash(els.copy, 'Скопировано');
-  } catch {
-    flash(els.copy, 'Не удалось');
-  }
-});
-function flash(btn, text) {
-  const old = btn.textContent;
-  btn.textContent = text;
-  setTimeout(() => { btn.textContent = old; }, 1400);
-}
+// F5 запускает код в любом месте страницы (вместо обновления страницы, которое стёрло бы вывод)
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'F5' || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+  e.preventDefault();
+  runCode();
+}, true);
 
 els.clear.addEventListener('click', () => {
   els.output.replaceChildren();
@@ -417,5 +448,5 @@ function gotoLine(n) {
   view.focus();
 }
 
-showPlaceholder('Нажмите «Запустить» или Ctrl+Enter.');
+showPlaceholder('Нажмите «Запустить» или F5.');
 startWorker();

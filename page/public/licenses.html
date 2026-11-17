@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Лицензии · Песочница 1С</title>
+<script>
+  // Тема, выбранная на главной странице (тот же ключ localStorage)
+  try { const t = localStorage.getItem('bsl-sandbox-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
+</script>
+<!-- Шаблон: при сборке scripts/collect_licenses.py подставляет таблицу компонентов и коммит OneScript -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* Текстовая страница: одна колонка для чтения, таблица компонентов, ссылки на тексты лицензий */
+  :root {
+    --bg: #f4f5f2; --panel: #ffffff; --ink: #1d2320; --muted: #5f6a64; --line: #d9ddd7;
+    --accent: #1f6f5c; --warn-bg: #fff4d6; --warn-ink: #6b4d00;
+    --font-ui: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+    --font-code: "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141816; --panel: #1b201e; --ink: #e4e8e5; --muted: #98a39d; --line: #2d3531;
+      --accent: #4fb89b; --warn-bg: #3a3017; --warn-ink: #f1d58a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141816; --panel: #1b201e; --ink: #e4e8e5; --muted: #98a39d; --line: #2d3531;
+    --accent: #4fb89b; --warn-bg: #3a3017; --warn-ink: #f1d58a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-ui); }
+  header { padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header a { color: var(--muted); font-size: 14px; text-decoration: none; }
+  header a:hover { color: var(--ink); text-decoration: underline; }
+  main { max-width: 72ch; margin: 0 auto; padding: 28px 16px 48px; }
+  h1 { font-size: 26px; font-weight: 600; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+  h2 { font-size: 18px; font-weight: 600; margin: 36px 0 8px; text-wrap: balance; }
+  p, ul { margin: 0 0 12px; }
+  li + li { margin-top: 4px; }
+  .lead { color: var(--muted); }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code { font-family: var(--font-code); font-size: 0.88em; overflow-wrap: anywhere; }
+  .note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 12px 16px; }
+  .note p:last-child { margin-bottom: 0; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th { font-weight: 600; color: var(--muted); font-size: 13px; }
+  td.num { font-family: var(--font-code); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* На телефоне строка таблицы — карточка: название, ниже версия и лицензия, ниже назначение */
+  @media (max-width: 560px) {
+    thead { display: none; }
+    tr { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    tbody tr:last-child { border-bottom: 0; }
+    td { border: 0; padding: 0; }
+    td:nth-child(1) { grid-column: 1 / -1; font-weight: 500; overflow-wrap: anywhere; }
+    td:nth-child(4) { grid-column: 1 / -1; color: var(--muted); font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<header><a href="./">← Вернуться в песочницу</a></header>
+<main>
+  <h1>Лицензии и правовая информация</h1>
+  <p class="lead">Сайт работает целиком в браузере и использует открытые компоненты. Здесь перечислено, что входит в сайт, под какими лицензиями и где взять исходный код.</p>
+
+  <div class="note">
+    <p><strong>Сайт не связан с фирмой «1С».</strong> «1С» и «1С:Предприятие» — товарные знаки фирмы «1С». Здесь они упоминаются только чтобы описать язык, с которым работает песочница. Код выполняет OneScript — независимая открытая реализация языка, а не платформа «1С:Предприятие».</p>
+  </div>
+
+  <h2>OneScript — Mozilla Public License 2.0</h2>
+  <p>Движок языка — <a href="{{ONESCRIPT_REPO}}">OneScript</a> (автор — Андрей Овсянкин и участники проекта), распространяется под лицензией MPL-2.0. Для работы в браузере в его исходники внесены изменения. Изменённые файлы распространяются под той же лицензией MPL-2.0.</p>
+  <ul>
+    <li><a href="licenses/OneScript-MPL-2.0.txt">Текст лицензии MPL-2.0</a></li>
+    <li>Исходный код OneScript, использованный в сборке: <a href="{{ONESCRIPT_REPO}}/tree/{{ONESCRIPT_COMMIT}}">коммит <code>{{ONESCRIPT_COMMIT_SHORT}}</code></a> (<a href="{{ONESCRIPT_REPO}}/archive/{{ONESCRIPT_COMMIT}}.zip">архив</a>)</li>
+    <li>Внесённые изменения: <a href="licenses/patch_onescript.py">patch_onescript.py</a> — скрипт применяет их к исходникам выше; <a href="licenses/OneScript-source.txt">список изменённых файлов и порядок сборки</a></li>
+  </ul>
+
+  <h2>Сторонние компоненты</h2>
+  <p>Все компоненты ниже, кроме OneScript, распространяются под разрешительными лицензиями. Полные тексты лицензий и уведомления об авторских правах собраны в одном файле: <a href="licenses/THIRD-PARTY-NOTICES.txt">THIRD-PARTY-NOTICES.txt</a>.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Компонент</th><th scope="col">Версия</th><th scope="col">Лицензия</th><th scope="col">Назначение</th></tr></thead>
+      <tbody>
+<!--COMPONENTS-->
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Шрифты</h2>
+  <p>IBM Plex Sans и JetBrains Mono загружаются с Google Fonts и распространяются под лицензией SIL Open Font License 1.1.</p>
+</main>
+</body>
+</html>
