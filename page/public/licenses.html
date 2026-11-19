@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Лицензии · Песочница 1С</title>
+<title>Лицензии · 1Candbox</title>
+<!--HEAD_ICONS-->
 <script>
   // Тема, выбранная на главной странице (тот же ключ localStorage)
   try { const t = localStorage.getItem('bsl-sandbox-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
@@ -34,11 +35,12 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-ui); }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-ui); min-height: 100vh; display: flex; flex-direction: column; }
   header { padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
   header a { color: var(--muted); font-size: 14px; text-decoration: none; }
   header a:hover { color: var(--ink); text-decoration: underline; }
-  main { max-width: 72ch; margin: 0 auto; padding: 28px 16px 48px; }
+  main { flex: 1; width: 100%; max-width: 72ch; margin: 0 auto; padding: 28px 16px 48px; }
+  /*SITE_FOOTER_CSS*/
   h1 { font-size: 26px; font-weight: 600; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
   h2 { font-size: 18px; font-weight: 600; margin: 36px 0 8px; text-wrap: balance; }
   p, ul { margin: 0 0 12px; }
@@ -66,7 +68,7 @@
 </style>
 </head>
 <body>
-<header><a href="./">← Вернуться в песочницу</a></header>
+<header><a href="./">← Вернуться в 1Candbox</a></header>
 <main>
   <h1>Лицензии и правовая информация</h1>
   <p class="lead">Сайт работает целиком в браузере и использует открытые компоненты. Здесь перечислено, что входит в сайт, под какими лицензиями и где взять исходный код.</p>
@@ -97,5 +99,6 @@
   <h2>Шрифты</h2>
   <p>IBM Plex Sans и JetBrains Mono загружаются с Google Fonts и распространяются под лицензией SIL Open Font License 1.1.</p>
 </main>
+<!--SITE_FOOTER-->
 </body>
 </html>

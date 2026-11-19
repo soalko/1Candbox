@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- Источник картинки для превью ссылок (og:image, 1200×630). Готовый PNG: page/public/og-image.png,
+     пересобрать: scripts/render_images.sh (нужен Google Chrome). -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600&display=block" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: #f4f5f2; color: #1d2320; font-family: "IBM Plex Sans", sans-serif;
+    display: grid; grid-template-columns: 440px 1fr; gap: 40px; align-items: center; padding: 0 64px;
+  }
+  .brand { display: flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand img { width: 60px; height: 60px; }
+  h1 { font-size: 54px; line-height: 1.08; margin: 34px 0 20px; letter-spacing: -0.02em; font-weight: 600; }
+  p { font-size: 24px; line-height: 1.4; margin: 0; color: #5f6a64; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+  .chips span { font-size: 19px; padding: 5px 14px; border: 1.5px solid #d9ddd7; border-radius: 999px; background: #fff; }
+  .card {
+    background: #1b201e; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(20, 30, 25, .25);
+    font: 17px/1.65 "JetBrains Mono", monospace; color: #e4e8e5;
+    font-variant-ligatures: none;
+  }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-bottom: 1px solid #2d3531; }
+  .dots { display: flex; gap: 8px; }
+  .dots i { width: 12px; height: 12px; border-radius: 50%; background: #2d3531; }
+  .run { font: 600 17px "IBM Plex Sans", sans-serif; background: #4fb89b; color: #0d1411; padding: 6px 18px; border-radius: 7px; }
+  pre { margin: 0; padding: 18px 22px; font: inherit; white-space: pre; }
+  .k { color: #cf9cf2; } .s { color: #f2a48c; } .n { color: #79c7f5; } .d { color: #8fb8ff; }
+  .out { border-top: 1px solid #2d3531; padding: 14px 22px 18px; color: #98a39d; }
+  .out b { display: block; font: 600 14px "IBM Plex Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+  .out span { color: #e4e8e5; white-space: pre; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="brand"><img src="../public/favicon.svg" alt="">1Candbox</div>
+    <h1>Онлайн-компилятор 1С</h1>
+    <p>Запуск кода на встроенном языке 1С прямо в браузере. Без установки платформы.</p>
+    <div class="chips"><span>Строки</span><span>ТаблицаЗначений</span><span>Запросы</span></div>
+  </div>
+  <div class="card">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><span class="run">Запустить</span></div>
+<pre><span class="k">Функция</span> <span class="d">Факториал</span>(Н)
+    <span class="k">Если</span> Н &lt;= <span class="n">1</span> <span class="k">Тогда</span> <span class="k">Возврат</span> <span class="n">1</span>; <span class="k">КонецЕсли</span>;
+    <span class="k">Возврат</span> Н * Факториал(Н - <span class="n">1</span>);
+<span class="k">КонецФункции</span>
+
+<span class="k">Для</span> Ч = <span class="n">1</span> <span class="k">По</span> <span class="n">5</span> <span class="k">Цикл</span>
+    Сообщить(СтрШаблон(<span class="s">"%1! = %2"</span>, Ч, Факториал(Ч)));
+<span class="k">КонецЦикла</span>;</pre>
+    <div class="out"><b>Вывод</b><span>1! = 1   2! = 2   3! = 6   4! = 24   5! = 120</span></div>
+  </div>
+</body>
+</html>

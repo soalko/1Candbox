@@ -9,7 +9,8 @@ browser/bin/
 browser/obj/
 # Готовый сайт: public/* + _framework/
 /site/
-# app.js собирается esbuild из page/src (index.html и worker.js в public — исходники)
+# Скрипты страниц собирает esbuild из page/src в page/dist (index.html, embed.html и worker.js в public — исходники)
+page/dist/
 page/public/app.js
 # метафайл esbuild для сбора лицензий (scripts/collect_licenses.py)
 page/meta.json
@@ -33,3 +34,6 @@ npm-debug.log*
 # --- macOS ---
 .DS_Store
 ._*
+
+# Настройки выкладки (адрес сервера): образец в deploy/deploy.env.example
+deploy/deploy.env

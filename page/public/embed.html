@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1Candbox: пример кода</title>
+<!-- Виджет для iframe: дублировать в поиске не нужно, индексируются страницы примеров -->
+<meta name="robots" content="noindex">
+<script>
+  // Тема до отрисовки: #theme=light|dark → выбор на сайте 1Candbox (localStorage) → системная
+  try {
+    var t = new URLSearchParams(location.hash.slice(1)).get('theme');
+    if (t !== 'light' && t !== 'dark') t = localStorage.getItem('bsl-sandbox-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch (e) {}
+  // Тема сменилась на странице того же сайта (переключатель на странице примера) — перекрашиваемся,
+  // если тема не задана явно параметром #theme
+  window.addEventListener('storage', function (e) {
+    if (e.key !== 'bsl-sandbox-theme' || /(^|[#&])theme=(light|dark)/.test(location.hash)) return;
+    if (e.newValue === 'light' || e.newValue === 'dark') document.documentElement.dataset.theme = e.newValue;
+    else delete document.documentElement.dataset.theme;
+  });
+  // На страницах самого 1Candbox ссылка «Лицензии» уже есть в подвале; на чужих сайтах она нужна
+  // в виджете (MPL-2.0: где взять исходники OneScript). Чужая страница не даст прочитать свой адрес.
+  try {
+    if (window.parent !== window && window.parent.location.origin === location.origin)
+      document.documentElement.classList.add('on-own-site');
+  } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f2; --panel: #ffffff; --ink: #1d2320; --muted: #5f6a64; --line: #d9ddd7;
+    --accent: #1f6f5c; --accent-ink: #ffffff; --warn-ink: #6b4d00; --err: #b3261e;
+    --syn-keyword: #7b3aa6; --syn-string: #a8361f; --syn-number: #0f6aa8; --syn-comment: #5f6a64;
+    --syn-annotation: #9a5400; --syn-macro: #0b7a5e; --syn-definition: #1f5fa8; --syn-type: #2a6b78;
+    --syn-operator: #55605a;
+    --font-ui: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+    --font-code: "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141816; --panel: #1b201e; --ink: #e4e8e5; --muted: #98a39d; --line: #2d3531;
+      --accent: #4fb89b; --accent-ink: #0d1411; --warn-ink: #f1d58a; --err: #ff8a80;
+      --syn-keyword: #cf9cf2; --syn-string: #f2a48c; --syn-number: #79c7f5; --syn-comment: #8d9993;
+      --syn-annotation: #f5c869; --syn-macro: #6fdab4; --syn-definition: #8fb8ff; --syn-type: #7fd0dc;
+      --syn-operator: #a8b3ad;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141816; --panel: #1b201e; --ink: #e4e8e5; --muted: #98a39d; --line: #2d3531;
+    --accent: #4fb89b; --accent-ink: #0d1411; --warn-ink: #f1d58a; --err: #ff8a80;
+    --syn-keyword: #cf9cf2; --syn-string: #f2a48c; --syn-number: #79c7f5; --syn-comment: #8d9993;
+    --syn-annotation: #f5c869; --syn-macro: #6fdab4; --syn-definition: #8fb8ff; --syn-type: #7fd0dc;
+    --syn-operator: #a8b3ad;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  html.fit, html.fit body { height: auto; }
+  body { background: var(--panel); color: var(--ink); font: 14px/1.5 var(--font-ui); }
+
+  /* Обычный iframe: виджет на всю высоту, редактор забирает свободное место.
+     fit=1 (<bsl-sandbox>): высота по содержимому, длинный код прокручивается внутри редактора. */
+  .widget {
+    display: flex; flex-direction: column; height: 100%;
+    border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel);
+  }
+  html.fit .widget { height: auto; }
+  .bar {
+    display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 6px;
+    border-bottom: 1px solid var(--line); background: var(--bg); flex: none;
+  }
+  #run-btn {
+    font: 600 13.5px/1 var(--font-ui); border-radius: 6px; cursor: pointer;
+    padding: 7px 14px; background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  #run-btn svg { width: 11px; height: 11px; }
+  #run-btn:disabled { opacity: .55; cursor: progress; }
+  #run-btn:focus-visible, .bar a:focus-visible, #stdin:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .status { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .status:empty { display: none; }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
+  .status[data-state="ready"]::before { background: var(--accent); }
+  .status[data-state="loading"]::before, .status[data-state="running"]::before { background: #d39b00; animation: pulse 1s infinite alternate; }
+  .status[data-state="fatal"]::before { background: var(--err); }
+  @keyframes pulse { to { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .status::before { animation: none !important; } }
+  .spacer { flex: 1; }
+  .bar a { color: var(--muted); font-size: 12.5px; text-underline-offset: 2px; white-space: nowrap; border-radius: 3px; }
+  .bar a:hover { color: var(--ink); }
+
+  #editor { flex: 1; min-height: 120px; }
+  html.fit #editor { flex: none; }
+  #editor .cm-editor { height: 100%; font-family: var(--font-code); font-size: 13.5px; background: var(--panel); }
+  html.fit #editor .cm-editor { height: auto; max-height: 440px; }
+  #editor .cm-scroller { font-family: var(--font-code); }
+  #editor .cm-gutters { background: var(--panel); border-right: 1px solid var(--line); color: var(--muted); }
+  #editor .cm-activeLine { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  #editor .cm-activeLineGutter { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--ink); }
+  #editor .cm-runtime-error-line { background: color-mix(in srgb, var(--err) 13%, transparent); }
+  #editor .cm-runtime-error-msg {
+    margin-left: 2.5em; padding: 0 8px; border-radius: 4px; color: var(--err);
+    background: color-mix(in srgb, var(--err) 10%, transparent); font: 12px/1.6 var(--font-ui); white-space: nowrap;
+  }
+  #editor .cm-tooltip { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
+  #editor .cm-tooltip-lint { font: 13px/1.45 var(--font-ui); }
+  #editor .cm-diagnostic { padding: 5px 9px; max-width: 46ch; }
+  #editor .cm-diagnostic-error { border-left: 3px solid var(--err); }
+  #editor .cm-diagnostic-warning { border-left: 3px solid var(--warn-ink); }
+  #editor .cm-diagnosticSource { color: var(--muted); opacity: 1; font-size: 12px; margin-top: 2px; }
+  #editor .cm-gutter-lint { width: 1.7em; }
+  #editor .cm-gutter-lint .cm-gutterElement { padding: 0 .25em; display: flex; align-items: center; justify-content: center; }
+
+  .sub-head { display: flex; justify-content: space-between; gap: 8px; padding: 5px 10px 0; font-size: 12px; color: var(--muted); }
+  .sub-head b { font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  #input-wrap { border-top: 1px solid var(--line); flex: none; }
+  #stdin {
+    display: block; width: 100%; height: 48px; resize: vertical; border: 0; padding: 4px 10px 6px;
+    font: 13px/1.5 var(--font-code); background: var(--panel); color: var(--ink);
+  }
+  #output-wrap { border-top: 1px solid var(--line); background: var(--bg); flex: none; }
+  #output {
+    max-height: 40vh; overflow: auto; padding: 4px 10px 8px;
+    font: 13.5px/1.55 var(--font-code); white-space: pre-wrap; word-break: break-word;
+  }
+  html.fit #output { max-height: 260px; }
+  #output .placeholder { color: var(--muted); margin: 0; font-family: var(--font-ui); }
+  .line-err { color: var(--err); }
+  .goto { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  [hidden] { display: none !important; }
+  @media (max-width: 420px) { .bar .lic { display: none; } }
+  .on-own-site .bar .lic { display: none; }
+</style>
+</head>
+<body>
+<div class="widget">
+  <div class="bar">
+    <button type="button" id="run-btn" title="Запуск: F5" aria-keyshortcuts="F5">
+      <svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z" fill="currentColor"/></svg>Запустить
+    </button>
+    <span class="status" id="engine-status" data-state="idle"></span>
+    <span class="spacer"></span>
+    <a id="open-link" href="index.html" target="_blank" rel="noopener">Открыть в 1Candbox ↗</a>
+    <a class="lic" href="licenses.html" target="_blank" rel="noopener" title="Код выполняет OneScript (MPL-2.0). Лицензии и исходный код">Лицензии</a>
+  </div>
+  <div id="editor" aria-label="Код на языке 1С"></div>
+  <div id="input-wrap" hidden>
+    <div class="sub-head"><label for="stdin"><b>Ввод</b></label><span>по строке на каждый ВвестиСтроку()</span></div>
+    <textarea id="stdin" spellcheck="false"></textarea>
+  </div>
+  <div id="output-wrap" hidden>
+    <div class="sub-head"><b>Вывод</b><span id="run-meta"></span></div>
+    <div id="output" role="log" aria-live="polite"></div>
+  </div>
+</div>
+<script type="module" src="embed-app.js"></script>
+</body>
+</html>

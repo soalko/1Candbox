@@ -11,6 +11,10 @@
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Заглушки функций БСП на языке 1С: ресурсы «bsp.<ИмяМодуля>» -->
+    <EmbeddedResource Include="bsp/*.bsl" LogicalName="bsp.%(Filename)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../onescript/src/ScriptEngine.HostedScript/ScriptEngine.HostedScript.csproj" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,50 @@
+# Caddy для 1Candbox. deploy/server-setup.sh подставляет домен вместо __DOMAIN__
+# и кладёт файл в /etc/caddy/Caddyfile. После правки на сервере: sudo systemctl reload caddy
+#
+# HTTPS-сертификат (Let's Encrypt) Caddy получает и продлевает сам, как только DNS домена
+# указывает на сервер. HTTP переадресуется на HTTPS автоматически.
+
+www.__DOMAIN__ {
+	redir https://__DOMAIN__{uri} permanent
+}
+
+__DOMAIN__ {
+	# current — симлинк на папку последнего релиза (deploy/deploy.sh переключает его после выкладки)
+	root * /var/www/1candbox/current
+
+	# _framework: рядом с каждым файлом лежат готовые .br и .gz из dotnet publish (25 МБ → 7,6 МБ в Brotli).
+	# Остальное (html, js, json) сжимается на лету.
+	file_server {
+		precompressed br gzip
+	}
+	encode zstd gzip
+
+	header {
+		# Имена файлов без хэшей (app.js, _framework/*.wasm), поэтому браузер каждый раз перепроверяет
+		# файл (запрос с If-None-Match, ответ 304 без тела). Так после выкладки никто не получит
+		# смесь старого dotnet.js и новых сборок. deploy.sh сохраняет неизменённые файлы с прежней датой,
+		# и их ETag не меняется между релизами.
+		Cache-Control "no-cache"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+		# X-Frame-Options и frame-ancestors не ставить: embed.html встраивают на чужие сайты.
+	}
+
+	# Неизвестный адрес — своя страница 404 (её создаёт page/build-pages.mjs), код ответа остаётся 404
+	handle_errors {
+		@notfound expression {err.status_code} == 404
+		handle @notfound {
+			rewrite * /404.html
+			file_server
+		}
+		respond "{err.status_code} {err.status_text}"
+	}
+
+	log {
+		output file /var/log/caddy/1candbox.log {
+			roll_size 50MiB
+			roll_keep 10
+		}
+	}
+}

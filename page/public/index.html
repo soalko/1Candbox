@@ -3,7 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Песочница 1С</title>
+<title>Онлайн-компилятор 1С: запустить код на языке 1С в браузере — 1Candbox</title>
+<meta name="description" content="Проверьте код на встроенном языке 1С онлайн: вставьте алгоритм, нажмите «Запустить» и сразу увидите результат. Без установки платформы, бесплатно, работает в браузере. Примеры: строки, даты, ТаблицаЗначений, JSON.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="1Candbox">
+<meta property="og:title" content="1Candbox — онлайн-компилятор языка 1С">
+<meta property="og:description" content="Запуск кода на встроенном языке 1С прямо в браузере, без установки платформы. Поделитесь ссылкой на свой пример.">
+<meta property="og:locale" content="ru_RU">
+<!--SEO_HEAD-->
+<!--HEAD_ICONS-->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"1Candbox","alternateName":"Онлайн-компилятор 1С","description":"Запуск и проверка кода на встроенном языке 1С (BSL) в браузере: переменные, процедуры и функции, циклы, строки, даты, Массив, Структура, Соответствие, ТаблицаЗначений, исключения.","applicationCategory":"DeveloperApplication","operatingSystem":"Любая с современным браузером","inLanguage":"ru","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"RUB"}}
+</script>
 <script>
   // Тема до первой отрисовки, чтобы не мигала: выбор пользователя из localStorage, иначе — системная
   try { const t = localStorage.getItem('bsl-sandbox-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
@@ -60,16 +71,16 @@
     display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
     padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
   }
-  .brand { display: flex; flex-direction: column; gap: 0; margin-right: auto; }
-  .brand h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-  .brand p { margin: 0; color: var(--muted); font-size: 13px; }
+  .brand { display: flex; flex-direction: column; margin-right: auto; min-width: 0; }
+  .brand h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; line-height: 1.25; }
+  .brand p { margin: 0; color: var(--muted); font-size: 13px; text-wrap: pretty; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  button, select {
+  button {
     font: inherit; font-size: 14px; border-radius: 6px; border: 1px solid var(--line);
     background: var(--panel); color: var(--ink); padding: 7px 12px; cursor: pointer;
   }
-  button:hover:not(:disabled), select:hover { border-color: var(--muted); }
-  button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #run-btn {
     position: relative;
     background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
@@ -85,20 +96,6 @@
   }
   #run-btn:hover::after, #run-btn:focus-visible::after { opacity: 1; transform: none; transition-delay: .15s; }
   @media (prefers-reduced-motion: reduce) { #run-btn::after { transition: none; } }
-
-  /* Список примеров: компактный, своя стрелка с отступом от края */
-  .select-wrap { position: relative; display: inline-flex; }
-  .select-wrap select {
-    appearance: none; -webkit-appearance: none;
-    /* На кнопке всегда «Примеры…» (после выбора значение сбрасывается), поэтому ширина по этой надписи;
-       раскрытый список показывает названия целиком */
-    font-size: 13px; padding: 5px 30px 5px 10px; width: 8.75em;
-  }
-  .select-wrap::after {
-    content: ""; position: absolute; right: 12px; top: 50%; width: 6px; height: 6px; pointer-events: none;
-    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
-    transform: translateY(-70%) rotate(45deg);
-  }
 
   /* Переключатель темы: два значка, выбранный подсвечен */
   .theme-switch { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
@@ -152,7 +149,17 @@
   /* Колонка значков ошибок: значок 14px плюс отступы, чтобы не залезал на границу редактора */
   #editor .cm-gutter-lint { width: 1.7em; }
   #editor .cm-gutter-lint .cm-gutterElement { padding: 0 .25em; display: flex; align-items: center; justify-content: center; }
-  .right { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; min-height: 0; }
+  /* Правая колонка: ввод и подсказки по содержимому, вывод забирает всю оставшуюся высоту
+     (раньше была сетка из трёх строк: скрытые подсказки выпадали из неё, и вывод не растягивался) */
+  .right { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .right .pane-output { flex: 1; }
+  .pane-head .head-tools { display: inline-flex; align-items: baseline; gap: 12px; }
+  .ghost-btn {
+    border: 0; background: none; padding: 0; font-size: 13px; color: var(--muted);
+    text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--muted) 45%, transparent);
+    text-underline-offset: 3px; border-radius: 3px;
+  }
+  .ghost-btn:hover:not(:disabled) { color: var(--ink); text-decoration-color: currentColor; }
   #stdin {
     width: 100%; min-height: 64px; height: 76px; resize: vertical; border: 0; padding: 10px 12px;
     font: 14px/1.5 var(--font-code); background: var(--panel); color: var(--ink); display: block;
@@ -169,30 +176,48 @@
     font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline;
     text-underline-offset: 2px; cursor: pointer; border-radius: 3px;
   }
-  footer { padding: 0 20px 14px; color: var(--muted); font-size: 12.5px; max-width: 110ch; }
-  footer p { margin: 0; }
-  footer p + p { margin-top: 4px; }
-  footer a { color: inherit; text-underline-offset: 2px; }
-  footer a:hover { color: var(--ink); }
+  /*SITE_FOOTER_CSS*/
+
+  /* Окно «Поделиться» */
+  dialog {
+    width: min(620px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--ink); box-shadow: 0 18px 50px rgba(0, 0, 0, .25);
+  }
+  dialog::backdrop { background: rgba(10, 14, 12, .45); }
+  dialog form { padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 6px; }
+  dialog h2 { margin: 0 0 2px; font-size: 17px; font-weight: 600; }
+  dialog label { font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 8px; }
+  dialog details { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  dialog summary { cursor: pointer; margin-bottom: 6px; }
+  .share-note { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .copy-row { display: flex; gap: 8px; align-items: flex-start; }
+  .copy-row input, .copy-row textarea {
+    flex: 1; min-width: 0; font: 12.5px/1.45 var(--font-code); color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; resize: vertical;
+  }
+  .copy-row button { flex: none; min-width: 8.5em; }
+  .copy-row input:focus-visible, .copy-row textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dialog-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
   @media (max-width: 820px) {
-    main { grid-template-columns: 1fr; }
-    #editor { min-height: 300px; }
+    /* Одна колонка: страница прокручивается, у редактора и вывода своя высота,
+       иначе подвал со ссылками на примеры сжимает их до нуля */
+    html, body { height: auto; }
+    body { min-height: 100%; }
+    /* minmax(0, …): иначе колонка растягивается под самую длинную строку кода и страница уезжает вбок */
+    main { flex: none; grid-template-columns: minmax(0, 1fr); }
+    #editor { flex: none; height: 60vh; min-height: 280px; }
+    #output { min-height: 180px; max-height: 60vh; }
   }
 </style>
 </head>
 <body>
 <header>
   <div class="brand">
-    <h1>Песочница 1С</h1>
-    <p>Проверка алгоритмов на встроенном языке 1С прямо в браузере, без установки платформы</p>
+    <h1>1Candbox</h1>
+    <p>Онлайн-компилятор 1С: проверка алгоритмов на встроенном языке прямо в браузере, без установки платформы</p>
   </div>
   <div class="actions">
     <span class="status" id="engine-status" data-state="loading"><span id="engine-status-text">Загружаю движок…</span></span>
-    <span class="select-wrap">
-      <select id="example-select" aria-label="Открыть пример">
-        <option value="">Примеры…</option>
-      </select>
-    </span>
     <div class="theme-switch" role="group" aria-label="Тема оформления">
       <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Светлая тема" title="Светлая тема">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -201,6 +226,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
     </div>
+    <button type="button" id="share-btn" title="Ссылка на код и код для встраивания в статью">Поделиться</button>
     <button type="button" id="run-btn" data-tip="Запуск: F5" aria-keyshortcuts="F5" disabled>Запустить</button>
   </div>
 </header>
@@ -215,17 +241,38 @@
       <div class="box"><textarea id="stdin" spellcheck="false" placeholder="Данные для ВвестиСтроку(), по одной строке"></textarea></div>
     </div>
     <ul id="hints" hidden></ul>
-    <div class="pane">
-      <div class="pane-head"><h2>Вывод</h2><span id="run-meta"></span></div>
+    <div class="pane pane-output">
+      <div class="pane-head"><h2>Вывод</h2><span class="head-tools"><span id="run-meta"></span><button type="button" id="clear-btn" class="ghost-btn">Очистить</button></span></div>
       <div class="box" style="flex:1;display:flex;min-height:0"><div id="output" role="log" aria-live="polite"></div></div>
-      <div><button type="button" id="clear-btn">Очистить вывод</button></div>
     </div>
   </section>
 </main>
-<footer>
-  <p>Код выполняет OneScript — открытая реализация языка 1С (MPL-2.0). Работает алгоритмическая часть: строки, числа, даты, Массив, Структура, Соответствие, ТаблицаЗначений, исключения. Запросов, справочников, документов и форм нет: для них нужна платформа «1С:Предприятие» с информационной базой.</p>
-  <p>Сайт не связан с фирмой «1С»; «1С» — её товарный знак. <a href="licenses.html">Лицензии и исходный код</a></p>
-</footer>
+<!--SITE_FOOTER-->
+<dialog id="share-dialog" aria-labelledby="share-title">
+  <form method="dialog">
+    <h2 id="share-title">Поделиться кодом</h2>
+    <p class="share-note" id="share-note"></p>
+    <label for="share-link">Ссылка на код</label>
+    <div class="copy-row">
+      <input id="share-link" readonly spellcheck="false">
+      <button type="button" data-copy="share-link">Копировать</button>
+    </div>
+    <label for="share-embed">Встроить в статью или блог</label>
+    <div class="copy-row">
+      <textarea id="share-embed" readonly rows="3" spellcheck="false"></textarea>
+      <button type="button" data-copy="share-embed">Копировать</button>
+    </div>
+    <details>
+      <summary>Веб-компонент &lt;bsl-sandbox&gt;: высота по содержимому, код виден в разметке</summary>
+      <div class="copy-row">
+        <textarea id="share-component" readonly rows="6" spellcheck="false"></textarea>
+        <button type="button" data-copy="share-component">Копировать</button>
+      </div>
+    </details>
+    <div class="dialog-actions"><button value="close">Закрыть</button></div>
+  </form>
+</dialog>
+<noscript><p style="padding:0 20px">Для запуска кода нужен JavaScript. Примеры кода на 1С можно посмотреть на странице <a href="examples/">«Примеры»</a>.</p></noscript>
 <script type="module" src="app.js"></script>
 </body>
 </html>

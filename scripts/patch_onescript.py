@@ -267,3 +267,97 @@ patch('src/OneScript.Language/SyntaxAnalysis/DefaultBslParser.cs',
         private int _sandboxLastErrLine = -2;
         private int _sandboxLastErrCol = -2;''',
       'поля для защиты от зацикливания восстановления')
+
+# 6. Представление числа как в платформе 1С (русская локаль): «2,5», «1 234 567» (группы через
+#    неразрывный пробел), без хвостовых нулей («2,2», а не «2.20»). Так числа выглядят в Сообщить(),
+#    Строка(), при сложении со строкой и в СтрШаблон. XMLСтрока и JSON по-прежнему пишут «2.5».
+patch('src/OneScript.Core/Values/BslNumericValue.cs',
+      '''        public override string ToString()
+        {
+            return _value.ToString(NumberFormatInfo.InvariantInfo);
+        }''',
+      '''        // Песочница: формат платформы 1С (ru): «1 234,5», без хвостовых нулей и экспоненты
+        private static readonly NumberFormatInfo SandboxPlatformFormat = new NumberFormatInfo
+        {
+            NumberDecimalSeparator = ",",
+            NumberGroupSeparator = "\\u00A0",
+            NumberGroupSizes = new[] { 3 },
+            NegativeSign = "-",
+        };
+
+        public override string ToString()
+        {
+            return _value.ToString("#,##0.############################", SandboxPlatformFormat);
+        }''',
+      'представление числа как в платформе')
+
+# 6а. Число("2,5"): платформа принимает и запятую. Сообщение об ошибке — как в платформе
+#     (раньше было «(null) Преобразование к типу 'Число' не поддерживается»).
+patch('src/OneScript.Core/Values/BslNumericValue.cs',
+      '''            try
+            {
+                var number = decimal.Parse(presentation, numStyle, numInfo);
+                return new BslNumericValue(number);
+            }
+            catch (FormatException)
+            {
+                throw BslExceptions.ConvertToNumberException();
+            }''',
+      '''            // Песочница: десятичная запятая, как в выводе чисел
+            if (presentation != null && presentation.IndexOf(',') >= 0 && presentation.IndexOf('.') < 0)
+                presentation = presentation.Replace(',', '.');
+            try
+            {
+                var number = decimal.Parse(presentation, numStyle, numInfo);
+                return new BslNumericValue(number);
+            }
+            catch (Exception e) when (e is FormatException || e is OverflowException || e is ArgumentNullException)
+            {
+                throw new TypeConversionException(new OneScript.Localization.BilingualString(
+                    "Преобразование значения к типу Число не может быть выполнено",
+                    "Conversion to type 'Number' is not possible"));
+            }''',
+      'Число() с запятой и текст ошибки')
+
+# 7. Ограничение глубины вызовов. Кадры стека OneScript лежат в куче, поэтому бесконечная рекурсия
+#    не переполняла стек, а крутилась до таймаута страницы (8 с). Теперь — ошибка, как в платформе.
+patch('src/ScriptEngine/Machine/MachineInstance.cs',
+      '''        private void PushFrame(ExecutionFrame frame)
+        {
+            _callStack.Push(frame);''',
+      '''        // Песочница: предел глубины вызовов процедур и функций
+        public static int SandboxMaxCallDepth = 0;
+
+        private void PushFrame(ExecutionFrame frame)
+        {
+            if (SandboxMaxCallDepth > 0 && _callStack.Count >= SandboxMaxCallDepth)
+                throw new RuntimeException(
+                    $"Переполнение стека встроенного языка: глубина вызовов превысила {SandboxMaxCallDepth}. " +
+                    "Проверьте условие выхода из рекурсии.");
+            _callStack.Push(frame);''',
+      'предел глубины вызовов')
+
+# 8. ОписаниеОшибки() в формате платформы: «{Модуль(3)}: текст» вместо
+#    «{Модуль Песочница / Ошибка в строке: 3 / текст}».
+patch('src/OneScript.Language/ScriptException.cs',
+      '''                var parts = new List<string>();
+
+                if (!string.IsNullOrEmpty(ModuleName))
+                    parts.Add($"Модуль {ModuleName}");
+
+                if (LineNumber != ErrorPositionInfo.OUT_OF_TEXT)
+                {
+                    parts.Add(ColumnNumber != ErrorPositionInfo.OUT_OF_TEXT
+                        ? BilingualString.Localize($"Ошибка в строке: {LineNumber},{ColumnNumber}", $"Error in line {LineNumber},{ColumnNumber}")
+                        : BilingualString.Localize($"Ошибка в строке: {LineNumber}", $"Error in line: {LineNumber}"));
+                }
+                parts.Add(base.Message);
+
+                var unquotedResult = string.Join(" / ", parts);
+                return $"{{{unquotedResult}}}";''',
+      '''                // Песочница: формат платформы 1С — «{Модуль(НомерСтроки)}: Описание»
+                if (LineNumber == ErrorPositionInfo.OUT_OF_TEXT)
+                    return base.Message;
+                var module = string.IsNullOrEmpty(ModuleName) ? "Модуль" : ModuleName;
+                return $"{{{module}({LineNumber})}}: {base.Message}";''',
+      'ОписаниеОшибки() в формате платформы')

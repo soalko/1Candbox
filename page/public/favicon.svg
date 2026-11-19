@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 1Candbox: приглашение консоли «>_» на акцентном цвете сайта. PNG и ICO из этого файла: scripts/render_images.sh -->
+  <rect width="64" height="64" rx="14" fill="#1f6f5c"/>
+  <g fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 20l13 12-13 12"/>
+    <path d="M35 45h13"/>
+  </g>
+</svg>

@@ -4,8 +4,26 @@
     {
       "name": "sandbox",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "site"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8080",
+        "--directory",
+        "site"
+      ],
       "port": 8080
+    },
+    {
+      "name": "sandbox-8081",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8081",
+        "--directory",
+        "site"
+      ],
+      "port": 8081
     }
   ]
 }
